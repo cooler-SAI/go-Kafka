@@ -8,16 +8,6 @@ import (
 	"time"
 )
 
-func main() {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	log.Info().Msg("Starting Kafka Go application...")
-
-	go startConsumer()
-	go startProducer()
-
-	select {}
-}
-
 func startProducer() {
 	config := sarama.NewConfig()
 	config.Producer.Return.Successes = true
@@ -86,6 +76,16 @@ func startConsumer() {
 			}
 		}(partition)
 	}
+
+	select {}
+}
+
+func main() {
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	log.Info().Msg("Starting Kafka Go application...")
+
+	go startConsumer()
+	go startProducer()
 
 	select {}
 }
