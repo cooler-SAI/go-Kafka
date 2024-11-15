@@ -5,6 +5,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -86,8 +88,14 @@ func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	log.Info().Msg("Starting Kafka Go application...")
 
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+
 	go startConsumer()
 	go startProducer()
 
-	select {}
+	<-stop
+
+	log.Error().Msg("Shutting down Kafka Go application...")
+
 }
