@@ -32,6 +32,7 @@ func startProducer() {
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to send message")
 		} else {
+			log.Log().Msg("Producer:")
 			log.Info().Msgf("Message is stored in topic(%s)/partition(%d)/offset(%d)", "first-topic", partition, offset)
 		}
 		time.Sleep(3 * time.Second)
@@ -72,6 +73,7 @@ func startConsumer() {
 			}(partitionConsumer)
 
 			for msg := range partitionConsumer.Messages() {
+				log.Log().Msg("Consumer:")
 				log.Info().Msgf("Received message from partition %d: %s", partition, string(msg.Value))
 			}
 		}(partition)
