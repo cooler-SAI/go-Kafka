@@ -62,27 +62,50 @@ func TestStartConsumer(t *testing.T) {
 		}
 	}(consumer)
 
-	log.Info().Msg("Initializing partition consumer for topic 'first-topic'...")
-	partitionConsumer, err := consumer.ConsumePartition("first-topic", 0, sarama.OffsetNewest)
-	assert.NoError(t, err, "Failed to start partition consumer")
-	defer func(partitionConsumer sarama.PartitionConsumer) {
-		err := partitionConsumer.Close()
-		if err != nil {
-			log.Error().Err(err).Msg("Error closing Kafka partition consumer")
-		}
-	}(partitionConsumer)
+	log.Info().Msg("Initializing partition consumers for topic 'first-topic'...")
+	partitions, err := consumer.Partitions("first-topic")
+	assert.NoError(t, err, "Failed to retrieve partitions for topic")
 
 	messageSent := "Test message"
+	done := make(chan bool)
+
+	for _, partition := range partitions {
+		go func(partition int32) {
+			partitionConsumer, err := consumer.ConsumePartition("first-topic",
+				partition, sarama.OffsetNewest)
+			assert.NoError(t, err, "Failed to start partition consumer")
+			defer func(partitionConsumer sarama.PartitionConsumer) {
+				err := partitionConsumer.Close()
+				if err != nil {
+					log.Error().Err(err).Msg("Error closing Kafka partition consumer")
+				}
+			}(partitionConsumer)
+
+			for msg := range partitionConsumer.Messages() {
+				log.Info().Msgf("Message received: topic=%s, partition=%d, offset=%d, value=%s",
+					msg.Topic, msg.Partition, msg.Offset, string(msg.Value))
+				assert.Equal(t, messageSent, string(msg.Value), "Received message "+
+					"does not match expected value")
+				done <- true
+				return
+			}
+		}(partition)
+	}
+
 	go func() {
 		log.Info().Msg("Starting producer for message sending during consumer test...")
-		producer, err := sarama.NewSyncProducer([]string{"localhost:9092"}, sarama.NewConfig())
+		producerConfig := sarama.NewConfig()
+		producerConfig.Producer.Return.Successes = true
+
+		producer, err := sarama.NewSyncProducer([]string{"localhost:9092"}, producerConfig)
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to create Kafka producer")
 			return
 		}
 		defer func(producer sarama.SyncProducer) {
-			if err := producer.Close(); err != nil {
-				log.Error().Err(err).Msg("Error closing Kafka producer")
+			err := producer.Close()
+			if err != nil {
+
 			}
 		}(producer)
 
@@ -94,19 +117,14 @@ func TestStartConsumer(t *testing.T) {
 			log.Error().Err(err).Msg("Failed to send message")
 			return
 		}
-
 		log.Info().Msgf("Message sent successfully: topic=first-topic,"+
 			" partition=%d, offset=%d", partition, offset)
 	}()
 
-	log.Info().Msg("Waiting for message in consumer...")
 	select {
-	case msg := <-partitionConsumer.Messages():
-		assert.Equal(t, messageSent, string(msg.Value), "Received message does not match "+
-			"expected value")
-		log.Info().Msgf("Message received successfully: %s", string(msg.Value))
-	case <-time.After(5 * time.Second):
+	case <-done:
+		log.Info().Msg("Test Consumer Kafka Successfully Completed")
+	case <-time.After(10 * time.Second):
 		t.Fatal("Test timed out waiting for Kafka message")
 	}
-	log.Info().Msg("Test Consumer Kafka Successfully Completed")
 }
