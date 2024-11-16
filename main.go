@@ -35,7 +35,8 @@ func startProducer() {
 			log.Error().Err(err).Msg("Failed to send message")
 		} else {
 			log.Log().Msg("Producer:")
-			log.Info().Msgf("Message is stored in topic(%s)/partition(%d)/offset(%d)", "first-topic", partition, offset)
+			log.Info().Msgf("Message is stored in topic(%s)/partition(%d)/offset(%d)",
+				"first-topic", partition, offset)
 		}
 		time.Sleep(3 * time.Second)
 	}
@@ -63,9 +64,11 @@ func startConsumer() {
 
 	for _, partition := range partitions {
 		go func(partition int32) {
-			partitionConsumer, err := consumer.ConsumePartition("first-topic", partition, sarama.OffsetNewest)
+			partitionConsumer, err := consumer.ConsumePartition("first-topic",
+				partition, sarama.OffsetNewest)
 			if err != nil {
-				log.Fatal().Err(err).Msgf("Failed to start partition consumer for partition %d", partition)
+				log.Fatal().Err(err).Msgf("Failed to start partition consumer "+
+					"for partition %d", partition)
 			}
 			defer func(partitionConsumer sarama.PartitionConsumer) {
 				err := partitionConsumer.Close()
@@ -76,7 +79,8 @@ func startConsumer() {
 
 			for msg := range partitionConsumer.Messages() {
 				log.Log().Msg("Consumer:")
-				log.Info().Msgf("Received message from partition %d: %s", partition, string(msg.Value))
+				log.Info().Msgf("Received message from partition %d: %s",
+					partition, string(msg.Value))
 			}
 		}(partition)
 	}
