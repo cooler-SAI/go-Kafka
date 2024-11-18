@@ -101,5 +101,7 @@ func main() {
 	<-stop
 
 	log.Error().Msg("Shutting down Kafka Go application...")
+	log.Error().Msg("Shutting down Kafka Producer...")
+	log.Error().Msg("Shutting down Kafka Consumer...")
 
 }
