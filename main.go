@@ -23,13 +23,10 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-	go kafka.StartProducer()
-	go kafka.StartConsumer()
+	go kafka.StartProducer(config.AppConfig.Kafka)
+	go kafka.StartConsumer(config.AppConfig.Kafka)
 
 	<-stop
 
 	log.Error().Msg("Shutting down Kafka Go application...")
-	log.Error().Msg("Shutting down Kafka Producer...")
-	log.Error().Msg("Shutting down Kafka Consumer...")
-
 }
