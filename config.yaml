@@ -1,0 +1,13 @@
+kafka:
+  brokers:
+    - "localhost:9092"
+
+  topic: "first-topic"
+
+  producer:
+    success_return: true
+
+  consumer:
+    success_return: true
+
+
