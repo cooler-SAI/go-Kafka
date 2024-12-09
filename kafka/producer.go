@@ -3,36 +3,36 @@ package kafka
 import (
 	"github.com/IBM/sarama"
 	"github.com/rs/zerolog/log"
+	"go-Kafka/config"
 	"time"
 )
 
-func StartProducer() {
-	config := sarama.NewConfig()
-	config.Producer.Return.Successes = true
+func StartProducer(cfg config.KafkaConfig) {
+	kafkaConfig := sarama.NewConfig()
+	kafkaConfig.Producer.Return.Successes = cfg.Producer.SuccessReturn
 
-	producer, err := sarama.NewSyncProducer([]string{"localhost:9092"}, config)
+	producer, err := sarama.NewSyncProducer(cfg.Brokers, kafkaConfig)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to start Kafka producer")
 	}
 	defer func(producer sarama.SyncProducer) {
 		err := producer.Close()
 		if err != nil {
-
+			log.Error().Err(err).Msg("Failed to close Kafka producer")
 		}
 	}(producer)
 
 	for {
 		msg := &sarama.ProducerMessage{
-			Topic: "first-topic",
+			Topic: cfg.Topic,
 			Value: sarama.StringEncoder("Hello from Kafka producer!"),
 		}
 		partition, offset, err := producer.SendMessage(msg)
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to send message")
 		} else {
-			log.Log().Msg("Producer:")
 			log.Info().Msgf("Message is stored in topic(%s)/partition(%d)/offset(%d)",
-				"first-topic", partition, offset)
+				cfg.Topic, partition, offset)
 		}
 		time.Sleep(3 * time.Second)
 	}
