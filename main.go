@@ -11,6 +11,12 @@ import (
 
 func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
+	log.Info().Msg("Loading configuration...")
+	if err := LoadConfig(); err != nil {
+		log.Fatal().Err(err).Msg("Failed to load configuration")
+	}
+
 	log.Info().Msg("Starting Kafka Go application...")
 
 	stop := make(chan os.Signal, 1)
